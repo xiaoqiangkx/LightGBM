@@ -44,10 +44,12 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   is_constant_hessian_ = is_constant_hessian;
   int max_cache_size = 0;
   // Get the max size of pool
+
+  // NL保存当前所有的叶子节点，max_cache_size和这个保持一致
   if (tree_config_->histogram_pool_size <= 0) {
     max_cache_size = tree_config_->num_leaves;
   } else {
-    size_t total_histogram_size = 0;
+    size_t total_histogram_size = 0;		// 记录一个Histogram的占用空间，Histogram描述了所有feature的统计特征，包括这个feature在数据集中的数量，sum_gradient和sum_hessian
     for (int i = 0; i < train_data_->num_features(); ++i) {
       total_histogram_size += sizeof(HistogramBinEntry) * train_data_->FeatureNumBin(i);
     }
@@ -55,14 +57,14 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   }
   // at least need 2 leaves
   max_cache_size = std::max(2, max_cache_size);
-  max_cache_size = std::min(max_cache_size, tree_config_->num_leaves);
+  max_cache_size = std::min(max_cache_size, tree_config_->num_leaves);		// 不能超过叶子节点的数量，如果histogram_pool_size过小的结果是??
 
-  histogram_pool_.DynamicChangeSize(train_data_, tree_config_, max_cache_size, tree_config_->num_leaves);
+  histogram_pool_.DynamicChangeSize(train_data_, tree_config_, max_cache_size, tree_config_->num_leaves);	// 调整histogramPool的大小??
   // push split information for all leaves
-  best_split_per_leaf_.resize(tree_config_->num_leaves);
+  best_split_per_leaf_.resize(tree_config_->num_leaves);	// 记录所有叶子节点如何split过来的
 
   // get ordered bin
-  train_data_->CreateOrderedBins(&ordered_bins_);
+  train_data_->CreateOrderedBins(&ordered_bins_);		// 重要方法：生成排序的Bin数据
 
   // check existing for ordered bin
   for (int i = 0; i < static_cast<int>(ordered_bins_.size()); ++i) {
@@ -72,12 +74,12 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     }
   }
   // initialize splits for leaf
-  smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
+  smaller_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));		// ?? 每个数据建立一个LeafSplit
   larger_leaf_splits_.reset(new LeafSplits(train_data_->num_data()));
 
   // initialize data partition
   data_partition_.reset(new DataPartition(num_data_, tree_config_->num_leaves));
-  is_feature_used_.resize(num_features_);
+  is_feature_used_.resize(num_features_);		// ?? Feature是否使用
   // initialize ordered gradients and hessians
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
